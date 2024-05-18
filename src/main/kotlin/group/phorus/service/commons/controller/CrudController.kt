@@ -24,7 +24,7 @@ abstract class CrudController<ENTITY: BaseEntity, DTO: Any, RESPONSE: Any>(
     @Suppress("UNCHECKED_CAST")
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    suspend fun findById(
+    open suspend fun findById(
         @PathVariable
         id: UUID,
     ): RESPONSE =
@@ -36,7 +36,7 @@ abstract class CrudController<ENTITY: BaseEntity, DTO: Any, RESPONSE: Any>(
         }
 
     @PostMapping
-    suspend fun create(
+    open suspend fun create(
         @Validated(Create::class)
         @RequestBody
         dto: DTO,
@@ -46,7 +46,7 @@ abstract class CrudController<ENTITY: BaseEntity, DTO: Any, RESPONSE: Any>(
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    suspend fun update(
+    open suspend fun update(
         @PathVariable
         id: UUID,
 
@@ -59,7 +59,7 @@ abstract class CrudController<ENTITY: BaseEntity, DTO: Any, RESPONSE: Any>(
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    suspend fun delete(@PathVariable id: UUID) {
+    open suspend fun delete(@PathVariable id: UUID) {
         service.delete(id)
     }
 }

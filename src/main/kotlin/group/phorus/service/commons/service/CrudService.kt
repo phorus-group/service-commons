@@ -20,13 +20,13 @@ abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
     private val repository: JpaRepository<ENTITY, UUID>,
     private val providedRepositories: Map<BeanName, JpaRepository<*, UUID>> = emptyMap(),
 ) {
-    suspend fun findById(id: UUID): ENTITY =
+    open suspend fun findById(id: UUID): ENTITY =
         withContext(Dispatchers.IO) {
             repository.findById(id)
         }.orElseThrow { NotFound("${entityClass.simpleName} with $id not found.") }
 
     @Suppress("UNCHECKED_CAST")
-    suspend fun create(dto: DTO): UUID {
+    open suspend fun create(dto: DTO): UUID {
         val entity = mapTo(
             originalEntity = OriginalEntity(dto, dto::class.starProjectedType),
             targetType = entityClass.createType(),
@@ -39,7 +39,7 @@ abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
     }
 
     @Suppress("UNCHECKED_CAST")
-    suspend fun update(id: UUID, dto: DTO) {
+    open suspend fun update(id: UUID, dto: DTO) {
         val entity = findById(id)
         val updatedEntity = mapTo(
             originalEntity = OriginalEntity(dto, dto::class.starProjectedType),
@@ -54,7 +54,7 @@ abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
         }
     }
 
-    suspend fun delete(id: UUID) {
+    open suspend fun delete(id: UUID) {
         findById(id).also {
             repository.delete(it)
         }
