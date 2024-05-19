@@ -49,11 +49,11 @@ dependencies {
 
     // Phorus
     implementation("group.phorus:mapper:1.1.0")
-    implementation("group.phorus:exception-handling:1.0.6")
+    implementation("group.phorus:exception-handling:1.0.7")
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("group.phorus:test-commons:1.0.4")
+    testImplementation("group.phorus:test-commons:1.0.5")
     testRuntimeOnly("com.h2database:h2")
 }
 
