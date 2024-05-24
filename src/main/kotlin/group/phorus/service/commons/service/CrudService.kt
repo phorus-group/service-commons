@@ -9,17 +9,32 @@ import group.phorus.mapper.mapping.mapTo
 import group.phorus.service.commons.model.BaseEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.springframework.context.ApplicationContext
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createType
+import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.starProjectedType
+import kotlin.reflect.full.valueParameters
+import kotlin.reflect.jvm.javaField
 
 abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
     private val entityClass: KClass<ENTITY>,
     private val repository: JpaRepository<ENTITY, UUID>,
-    private val providedRepositories: Map<BeanName, JpaRepository<*, UUID>> = emptyMap(),
+    applicationContext: ApplicationContext,
 ) {
+    private val repositories = applicationContext.getBeansOfType(JpaRepository::class.java).map { (_, value) ->
+        // Get the interface that is extending this JpaRepository to avoid type erasure
+        val inter = (value.javaClass.genericInterfaces.first() as Class<*>)
+
+        // Get the entity class from the first value parameter of the delete function
+        val entityClass = inter.kotlin.members.first { it.name == "delete" }
+            .valueParameters.first().type.classifier as KClass<*>
+
+        entityClass to value
+    }.toMap()
+
     open suspend fun findById(id: UUID): ENTITY =
         withContext(Dispatchers.IO) {
             repository.findById(id)
@@ -30,7 +45,7 @@ abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
         val entity = mapTo(
             originalEntity = OriginalEntity(dto, dto::class.starProjectedType),
             targetType = entityClass.createType(),
-            functionMappings = getFunctionMappings(),
+            functionMappings = getFunctionMappings(dto),
         ) as ENTITY
 
         return withContext(Dispatchers.IO) {
@@ -46,7 +61,7 @@ abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
             targetType = entityClass.createType(),
             baseEntity = entity to UpdateOption.IGNORE_NULLS,
             useSettersOnly = true,
-            functionMappings = getFunctionMappings(),
+            functionMappings = getFunctionMappings(dto),
         ) as ENTITY
 
         withContext(Dispatchers.IO) {
@@ -61,32 +76,42 @@ abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
     }
 
 
-    private fun CrudService<*, *>.getFunctionMappings(): FunctionMappings {
-        val mappings = this::class.annotations.filterIsInstance<Mappings>().firstOrNull()?.value
+    private fun getFunctionMappings(dto: DTO): FunctionMappings {
+        val mappings = mutableMapOf<String, Pair<String, KClass<*>>>()
 
-        return mappings?.associate { mapping ->
+        // Find fields in the DTO containing a MapTo annotation
+        dto::class.memberProperties.forEach { property ->
+            val annotation = property.javaField?.annotations?.filterIsInstance<MapTo>()
+            if (!annotation.isNullOrEmpty()) {
+                // Extract the KClass of the target fields and save the DTO sourceField, entity targetField, and target KClass
+                val targetFields = annotation.first().fields
+                targetFields.forEach { targetField ->
+                    val entity = entityClass.memberProperties.first { it.name == targetField }.returnType.classifier as KClass<*>
+
+                    mappings[property.name] = targetField to entity
+                }
+            }
+        }
+
+        return mappings.mapNotNull { (sourceField, target) ->
+            val (targetField, targetKClass) = target
+            @Suppress("UNCHECKED_CAST")
+            val repository = repositories[targetKClass]?.let {
+                it as JpaRepository<*, UUID>
+            } ?: return@mapNotNull null
+
             val fetchRelation : (UUID) -> Any = { id ->
-                val beanName = mapping.repository.simpleName!!.replaceFirstChar { it.lowercase() }
-                this.providedRepositories[beanName]!!.findById(id)
-                    .orElseThrow {
-                        NotFound("${mapping.targetField.replaceFirstChar { it.uppercase() }} with $id not found.")
-                    }
+                repository.findById(id).orElseThrow {
+                    NotFound("${targetField.replaceFirstChar { it.uppercase() }} with $id not found.")
+                }
             }
 
-            mapping.sourceField to (fetchRelation to (mapping.targetField to MappingFallback.NULL_OR_THROW))
-        } ?: emptyMap()
+            sourceField to (fetchRelation to (targetField to MappingFallback.NULL_OR_THROW))
+        }.toMap()
     }
 }
 
-typealias BeanName = String
-
-annotation class Mapping(
-    val sourceField: String,
-    val targetField: String,
-    val repository: KClass<out JpaRepository<*, *>>,
-)
-
-@Target(AnnotationTarget.CLASS)
-annotation class Mappings(
-    vararg val value: Mapping,
+@Target(AnnotationTarget.FIELD)
+annotation class MapTo(
+    val fields: Array<String>,
 )
