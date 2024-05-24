@@ -13,10 +13,7 @@ import org.springframework.context.ApplicationContext
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.*
 import kotlin.reflect.KClass
-import kotlin.reflect.full.createType
-import kotlin.reflect.full.memberProperties
-import kotlin.reflect.full.starProjectedType
-import kotlin.reflect.full.valueParameters
+import kotlin.reflect.full.*
 import kotlin.reflect.jvm.javaField
 
 abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
@@ -77,32 +74,37 @@ abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
 
 
     private fun getFunctionMappings(dto: DTO): FunctionMappings {
-        val mappings = mutableMapOf<String, Pair<String, KClass<*>>>()
+        val mappings = mutableMapOf<String, Pair<String, Pair<KClass<*>, String>>>()
 
         // Find fields in the DTO containing a MapTo annotation
         dto::class.memberProperties.forEach { property ->
-            val annotation = property.javaField?.annotations?.filterIsInstance<MapTo>()
-            if (!annotation.isNullOrEmpty()) {
+            val annotations = property.javaField?.annotations?.filterIsInstance<MapTo>()
+            annotations?.forEach { annotation ->
                 // Extract the KClass of the target fields and save the DTO sourceField, entity targetField, and target KClass
-                val targetFields = annotation.first().fields
-                targetFields.forEach { targetField ->
-                    val entity = entityClass.memberProperties.first { it.name == targetField }.returnType.classifier as KClass<*>
+                val targetField = annotation.field
+                val function = annotation.function
+                val entity = entityClass.memberProperties.first { it.name == targetField }.returnType.classifier as KClass<*>
 
-                    mappings[property.name] = targetField to entity
-                }
+                mappings[property.name] = targetField to (entity to function)
             }
         }
 
         return mappings.mapNotNull { (sourceField, target) ->
-            val (targetField, targetKClass) = target
+            val (targetField, targetEntity) = target
+            val (targetKClass, function) = targetEntity
+
             @Suppress("UNCHECKED_CAST")
             val repository = repositories[targetKClass]?.let {
-                it as JpaRepository<*, UUID>
+                it as JpaRepository<*, Any>
+            } ?: return@mapNotNull null
+            val repositoryFunction = repository::class.memberFunctions.firstOrNull {
+                it.name == function
             } ?: return@mapNotNull null
 
-            val fetchRelation : (UUID) -> Any = { id ->
-                repository.findById(id).orElseThrow {
-                    NotFound("${targetField.replaceFirstChar { it.uppercase() }} with $id not found.")
+            val fetchRelation : (Any) -> Any = { value ->
+                val response = repositoryFunction.call(repository, value) as Optional<*>
+                response.orElseThrow {
+                    NotFound("${targetField.replaceFirstChar { it.uppercase() }} with $sourceField $value not found.")
                 }
             }
 
@@ -113,5 +115,6 @@ abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
 
 @Target(AnnotationTarget.FIELD)
 annotation class MapTo(
-    val fields: Array<String>,
+    val field: String,
+    val function: String = "findById",
 )

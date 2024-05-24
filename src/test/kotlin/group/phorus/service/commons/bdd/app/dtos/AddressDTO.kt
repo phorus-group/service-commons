@@ -12,7 +12,7 @@ data class AddressDTO (
     var address: String? = null,
 
     @MapFrom(["user/id"])
-    @MapTo(["user"])
+    @MapTo("user")
     @field:NotNull(groups = [Create::class], message = "Cannot be null")
     var userID: UUID? = null,
 )
