@@ -23,7 +23,7 @@ Feature: User CRUD operations
     Given the given User exists:
       | name     |
       | testUser |
-    When the GET "/user/{userID}" endpoint is called
+    When the GET "/user/{userId}" endpoint is called
     Then the service returns HTTP 200
     And the service returns the User
 
@@ -34,7 +34,7 @@ Feature: User CRUD operations
     And the caller has the given User:
       | name          |
       | otherTestName |
-    When the PUT "/user/{userID}" endpoint is called
+    When the PUT "/user/{userId}" endpoint is called
     Then the service returns HTTP 204
     And the updated User is found in the database
 
@@ -42,6 +42,6 @@ Feature: User CRUD operations
     Given the given User exists:
       | name     |
       | testUser |
-    When the DELETE "/user/{userID}" endpoint is called
+    When the DELETE "/user/{userId}" endpoint is called
     Then the service returns HTTP 204
     And the User was removed from the database

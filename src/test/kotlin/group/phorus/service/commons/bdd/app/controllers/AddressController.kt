@@ -19,16 +19,16 @@ import java.util.*
 class AddressController(
     private val addressService: AddressService
 ) : CrudController<Address, AddressDTO, AddressResponse>(AddressResponse::class, "/address", addressService) {
-    @GetMapping("/findAllBy/userID")
+    @GetMapping("/findAllBy/userId")
     @ResponseStatus(HttpStatus.OK)
-    suspend fun findAllByUserID(
+    suspend fun findAllByUserId(
         @RequestParam
-        userID: UUID,
+        userId: UUID,
 
         @PageableDefault
         pageable: Pageable,
     ): Page<AddressResponse> =
-        addressService.findAllByUserID(userID, pageable).let { page ->
+        addressService.findAllByUserId(userId, pageable).let { page ->
             PageImpl(page.mapTo<List<AddressResponse>>()!!, pageable, page.totalElements)
         }
 }

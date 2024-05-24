@@ -16,8 +16,8 @@ class AddressServiceImpl(
     private val addressRepository: AddressRepository,
     applicationContext: ApplicationContext,
 ) : AddressService(addressRepository, applicationContext) {
-    override suspend fun findAllByUserID(userID: UUID, pageable: Pageable): Page<Address> =
+    override suspend fun findAllByUserId(userId: UUID, pageable: Pageable): Page<Address> =
         withContext(Dispatchers.IO) {
-            addressRepository.findAllByUserId(userID, pageable)
+            addressRepository.findAllByUserId(userId, pageable)
         }
 }

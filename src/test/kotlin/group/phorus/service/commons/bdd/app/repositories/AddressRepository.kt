@@ -9,5 +9,5 @@ import java.util.*
 
 @Repository
 interface AddressRepository: JpaRepository<Address, UUID>{
-    fun findAllByUserId(userID: UUID, pageable: Pageable): Page<Address>
+    fun findAllByUserId(userId: UUID, pageable: Pageable): Page<Address>
 }

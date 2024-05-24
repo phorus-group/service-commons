@@ -34,7 +34,7 @@ class AddressStepsDefinition(
         val address = data.asMaps().first().let {
             AddressDTO(
                 address = it["address"],
-                userID = (baseScenarioScope.objects["userID"] as String).let { id -> UUID.fromString(id) },
+                userId = (baseScenarioScope.objects["userId"] as String).let { id -> UUID.fromString(id) },
             )
         }
 
@@ -43,8 +43,8 @@ class AddressStepsDefinition(
 
     @Given("the given Address exists:")
     fun `the given Address exists`(data: DataTable) {
-        val userID = (baseScenarioScope.objects["userID"] as String).let { id -> UUID.fromString(id) }
-        val user = userRepository.findById(userID).get()
+        val userId = (baseScenarioScope.objects["userId"] as String).let { id -> UUID.fromString(id) }
+        val user = userRepository.findById(userId).get()
 
         val address = data.asMaps().first().let {
             Address(
@@ -54,19 +54,19 @@ class AddressStepsDefinition(
         }
 
         baseScenarioScope.objects["addressResponse"] = addressRepository.saveAndFlush(address).mapTo<AddressResponse>()!!
-        baseScenarioScope.objects["addressID"] = (baseScenarioScope.objects["addressResponse"] as AddressResponse).id!!.toString()
+        baseScenarioScope.objects["addressId"] = (baseScenarioScope.objects["addressResponse"] as AddressResponse).id!!.toString()
     }
 
 
     @Then("the new Address was created")
     fun `the new Address was created`() {
-        val addressID = responseScenarioScope.responseSpec!!
+        val addressId = responseScenarioScope.responseSpec!!
             .returnResult<Void>().responseHeaders
             .location!!.path
             .replace("/address/", "")
             .let { UUID.fromString(it) }
 
-        val newAddress = addressRepository.findById(addressID).getOrNull()?.mapTo<AddressDTO>()
+        val newAddress = addressRepository.findById(addressId).getOrNull()?.mapTo<AddressDTO>()
 
         assertEquals(requestScenarioScope.request as AddressDTO, newAddress)
     }
@@ -84,9 +84,9 @@ class AddressStepsDefinition(
 
     @Then("the Address was removed from the database")
     fun `the Address was removed from the database`() {
-        val addressID = (baseScenarioScope.objects["addressID"] as String).let { UUID.fromString(it) }
+        val addressId = (baseScenarioScope.objects["addressId"] as String).let { UUID.fromString(it) }
 
-        val address = addressRepository.findById(addressID).getOrNull()
+        val address = addressRepository.findById(addressId).getOrNull()
 
         assertNull(address)
     }

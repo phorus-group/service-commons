@@ -46,19 +46,19 @@ class UserStepsDefinition(
         }
 
         baseScenarioScope.objects["userResponse"] = userRepository.saveAndFlush(user).mapTo<UserResponse>()!!
-        baseScenarioScope.objects["userID"] = (baseScenarioScope.objects["userResponse"] as UserResponse).id!!.toString()
+        baseScenarioScope.objects["userId"] = (baseScenarioScope.objects["userResponse"] as UserResponse).id!!.toString()
     }
 
 
     @Then("the new User was created")
     fun `the new User was created`() {
-        val userID = responseScenarioScope.responseSpec!!
+        val userId = responseScenarioScope.responseSpec!!
             .returnResult<Void>().responseHeaders
             .location!!.path
             .replace("/user/", "")
             .let { UUID.fromString(it) }
 
-        val newUser = userRepository.findById(userID).getOrNull()?.mapTo<UserDTO>()
+        val newUser = userRepository.findById(userId).getOrNull()?.mapTo<UserDTO>()
 
         assertEquals(requestScenarioScope.request as UserDTO, newUser)
     }
@@ -76,9 +76,9 @@ class UserStepsDefinition(
 
     @Then("the User was removed from the database")
     fun `the User was removed from the database`() {
-        val userID = (baseScenarioScope.objects["userID"] as String).let { UUID.fromString(it) }
+        val userId = (baseScenarioScope.objects["userId"] as String).let { UUID.fromString(it) }
 
-        val user = userRepository.findById(userID).getOrNull()
+        val user = userRepository.findById(userId).getOrNull()
 
         assertNull(user)
     }

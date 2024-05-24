@@ -19,7 +19,7 @@ Feature: Address CRUD operations
     Given the given Address exists:
       | address     |
       | testAddress |
-    When the GET "/address/{addressID}" endpoint is called
+    When the GET "/address/{addressId}" endpoint is called
     Then the service returns HTTP 200
     And the service returns the Address
 
@@ -33,7 +33,7 @@ Feature: Address CRUD operations
     And the caller has the given Address:
       | address       |
       | otherTestName |
-    When the PUT "/address/{addressID}" endpoint is called
+    When the PUT "/address/{addressId}" endpoint is called
     Then the service returns HTTP 204
     And the updated Address is found in the database
 
@@ -44,7 +44,7 @@ Feature: Address CRUD operations
     Given the given Address exists:
       | address     |
       | testAddress |
-    When the DELETE "/address/{addressID}" endpoint is called
+    When the DELETE "/address/{addressId}" endpoint is called
     Then the service returns HTTP 204
     And the Address was removed from the database
 
@@ -55,7 +55,7 @@ Feature: Address CRUD operations
     Given the given Address exists:
       | address     |
       | testAddress |
-    When the GET "/address/findAllBy/userID" endpoint is called with request params:
-      | userID | {userID} |
+    When the GET "/address/findAllBy/userId" endpoint is called with request params:
+      | userId | {userId} |
     And the service returns HTTP 200
     And the service returns a page with the matching Addresses

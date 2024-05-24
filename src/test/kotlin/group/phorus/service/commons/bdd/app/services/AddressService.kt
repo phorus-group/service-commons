@@ -14,5 +14,5 @@ abstract class AddressService(
     addressRepository: AddressRepository,
     applicationContext: ApplicationContext,
 ): CrudService<Address, AddressDTO>(Address::class, addressRepository, applicationContext) {
-    abstract suspend fun findAllByUserID(userID: UUID, pageable: Pageable): Page<Address>
+    abstract suspend fun findAllByUserId(userId: UUID, pageable: Pageable): Page<Address>
 }
