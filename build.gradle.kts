@@ -53,7 +53,7 @@ dependencies {
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("group.phorus:test-commons:1.0.6")
+    testImplementation("group.phorus:test-commons:1.1.0")
     testRuntimeOnly("com.h2database:h2")
 }
 

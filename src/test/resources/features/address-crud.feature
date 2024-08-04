@@ -55,7 +55,8 @@ Feature: Address CRUD operations
     Given the given Address exists:
       | address     |
       | testAddress |
-    When the GET "/address/findAllBy/userId" endpoint is called with request params:
-      | userId | {userId} |
+    When the GET "/address/findAllBy/userId" endpoint is called:
+      | type   | key      | value     |
+      | param  | userId   | {userId}  |
     And the service returns HTTP 200
     And the service returns a page with the matching Addresses
