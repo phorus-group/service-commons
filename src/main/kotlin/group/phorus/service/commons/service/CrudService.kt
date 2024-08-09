@@ -35,7 +35,7 @@ abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
     open suspend fun findById(id: UUID): ENTITY =
         withContext(Dispatchers.IO) {
             repository.findById(id)
-        }.orElseThrow { NotFound("${entityClass.simpleName} with $id not found.") }
+        }.orElseThrow { NotFound("${entityClass.simpleName} with id $id not found.") }
 
     @Suppress("UNCHECKED_CAST")
     open suspend fun create(dto: DTO): UUID {
