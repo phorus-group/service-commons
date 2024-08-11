@@ -48,12 +48,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 
     // Phorus
-    implementation("group.phorus:mapper:1.1.1")
-    implementation("group.phorus:exception-handling:1.0.9")
+    implementation("group.phorus:mapper:1.1.2")
+    implementation("group.phorus:exception-handling:1.0.10")
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("group.phorus:test-commons:1.1.1")
+    testImplementation("group.phorus:test-commons:1.1.2")
     testRuntimeOnly("com.h2database:h2")
 }
 
