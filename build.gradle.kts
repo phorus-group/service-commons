@@ -21,7 +21,7 @@ plugins {
 
 group = "group.phorus"
 description = "Library containing common logic for Spring based services."
-version = "1.1.7"
+version = "1.1.8"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
