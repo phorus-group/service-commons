@@ -9,4 +9,4 @@ import org.springframework.context.ApplicationContext
 abstract class UserService(
     userRepository: UserRepository,
     applicationContext: ApplicationContext,
-): CrudService<User, UserDTO>(User::class, userRepository, applicationContext)
+): CrudService<User, UserDTO>(userRepository, applicationContext)

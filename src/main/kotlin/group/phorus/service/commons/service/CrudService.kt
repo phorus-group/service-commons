@@ -16,8 +16,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.*
 import kotlin.reflect.jvm.javaField
 
-abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
-    private val entityClass: KClass<ENTITY>,
+class CrudService<ENTITY: BaseEntity, DTO: Any>(
     private val repository: JpaRepository<ENTITY, UUID>,
     applicationContext: ApplicationContext,
 ) {
@@ -31,6 +30,7 @@ abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
 
         entityClass to value
     }.toMap()
+    private val entityClass = repositories.filter { (_, value) -> value == repository }.map { (key, _) -> key }.first()
 
     open suspend fun findById(id: UUID): ENTITY =
         withContext(Dispatchers.IO) {
