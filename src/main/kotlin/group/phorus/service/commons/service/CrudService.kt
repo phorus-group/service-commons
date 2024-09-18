@@ -16,7 +16,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.*
 import kotlin.reflect.jvm.javaField
 
-class CrudService<ENTITY: BaseEntity, DTO: Any>(
+abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
     private val repository: JpaRepository<ENTITY, UUID>,
     applicationContext: ApplicationContext,
 ) {
