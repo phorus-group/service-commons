@@ -9,28 +9,114 @@ import group.phorus.mapper.mapping.mapTo
 import group.phorus.service.commons.model.BaseEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.springframework.context.ApplicationContext
+import org.springframework.beans.factory.ListableBeanFactory
+import org.springframework.beans.factory.config.*
+import org.springframework.beans.factory.support.DefaultListableBeanFactory
+import org.springframework.beans.factory.support.RootBeanDefinition
+import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.core.ResolvableType
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.full.*
 import kotlin.reflect.jvm.javaField
 
-abstract class CrudService<ENTITY: BaseEntity, DTO: Any>(
+private fun JpaRepository<*, *>.getRepositoryEntity(): KClass<*> {
+    // Get the interface that is extending this JpaRepository to avoid type erasure
+    val inter = this.javaClass.genericInterfaces.first() as Class<*>
+
+    // Get the entity class from the first value parameter of the delete function
+    return inter.kotlin.members.first { it.name == "delete" }
+        .valueParameters.first().type.classifier as KClass<*>
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun ListableBeanFactory.getRepositoriesMap() = this.getBeansOfType(JpaRepository::class.java).map { (_, value) ->
+    value.getRepositoryEntity() to value
+}.toMap() as Map<KClass<*>, JpaRepository<*, UUID>>
+
+@AutoConfiguration
+class CrudServiceDependencyResolver : BeanFactoryPostProcessor {
+    override fun postProcessBeanFactory(beanFactory: ConfigurableListableBeanFactory) {
+        // We need to iterate through every bean and find the different CrudService beans that we need to register
+        val beanNames = beanFactory.beanDefinitionNames
+
+        // Get the applicationContextProvider bean to then use it to create the new CrudService beans
+        val contextProviderBean = beanFactory.getBeanNamesForType(ApplicationContextProvider::class.java).first()
+            .let { beanFactory.getBeanDefinition(it) }
+
+        val existingCrudServiceImpls = beanFactory.getBeanNamesForType(CrudService::class.java)
+            .mapNotNull { beanName -> beanFactory.getBeanDefinition(beanName).beanClassName?.let { Class.forName(it).kotlin } }
+            .map { clazz ->
+                val entity = clazz.members.first { it.name == "findById" }
+                    .returnType.classifier as KClass<*>
+                val dto = clazz.members.first { it.name == "create" }
+                    .valueParameters.first().type.classifier as KClass<*>
+
+                "crudService-${entity.simpleName}-${dto.simpleName}"
+            }
+
+        for (beanName in beanNames) {
+            val bean = beanFactory.getBeanDefinition(beanName)
+
+            // Get bean class
+            val clazz = bean.beanClassName?.let { Class.forName(it) } ?: continue
+            val constructor = clazz.kotlin.constructors.firstOrNull() ?: continue
+
+            // Get CrudService parameters used by the bean, if any
+            val crudServiceParams = constructor.parameters.map { it.type }.filter { it.classifier == CrudService::class }
+
+            // Create a bean for every parameter found, if needed
+            crudServiceParams.forEach { crudServiceType ->
+                val entity = crudServiceType.arguments.first().type!!.classifier as KClass<*>
+                val dto = crudServiceType.arguments[1].type!!.classifier as KClass<*>
+                val crudBeanName = "crudService-${entity.simpleName}-${dto.simpleName}"
+
+                // Skip if the bean already exists
+                if (beanFactory.containsBean(crudBeanName) || existingCrudServiceImpls.contains(crudBeanName))
+                    return@forEach
+
+                // Get the matching repository definition
+                val repositoryDefinition = beanFactory.getBeanNamesForType(
+                    ResolvableType.forClassWithGenerics(
+                        JpaRepository::class.java,
+                        entity.java,
+                        UUID::class.java,
+                    )
+                ).first().let { beanFactory.getBeanDefinition(it) }
+
+                // Create the new CrudService bean definition for this entity and dto
+                val bd = RootBeanDefinition(CrudService::class.java, AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR, true).apply {
+                    scope = ConfigurableBeanFactory.SCOPE_PROTOTYPE
+                    setTargetType(ResolvableType.forClassWithGenerics(
+                        CrudService::class.java,
+                        entity.java,
+                        dto.java,
+                    ))
+                    // Set the bean definitions that need to be resolved based on the CrudService constructor
+                    constructorArgumentValues = ConstructorArgumentValues().apply {
+                        addIndexedArgumentValue(0, repositoryDefinition)
+                        addIndexedArgumentValue(1, contextProviderBean)
+                    }
+                }
+                // Register the new CrudService bean definition
+                (beanFactory as DefaultListableBeanFactory).registerBeanDefinition(crudBeanName, bd)
+
+                // Register the new bean as a dependency
+                beanFactory.registerDependentBean(crudBeanName, beanName)
+            }
+        }
+    }
+}
+
+open class CrudService<ENTITY: BaseEntity, DTO: Any>(
     private val repository: JpaRepository<ENTITY, UUID>,
-    applicationContext: ApplicationContext,
+    applicationContextProvider: ApplicationContextProvider,
 ) {
-    private val repositories = applicationContext.getBeansOfType(JpaRepository::class.java).map { (_, value) ->
-        // Get the interface that is extending this JpaRepository to avoid type erasure
-        val inter = (value.javaClass.genericInterfaces.first() as Class<*>)
+    private var context = applicationContextProvider.applicationContext
 
-        // Get the entity class from the first value parameter of the delete function
-        val entityClass = inter.kotlin.members.first { it.name == "delete" }
-            .valueParameters.first().type.classifier as KClass<*>
-
-        entityClass to value
-    }.toMap()
-    private val entityClass = repositories.filter { (_, value) -> value == repository }.map { (key, _) -> key }.first()
+    private val repositories = context.getRepositoriesMap()
+    private val entityClass = repository.getRepositoryEntity()
 
     open suspend fun findById(id: UUID): ENTITY =
         withContext(Dispatchers.IO) {
