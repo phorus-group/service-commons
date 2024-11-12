@@ -1,0 +1,60 @@
+name: Gradle Publish
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  GRADLE_PUBLISH_ENV_NAME: ${{ secrets.GRADLE_PUBLISH_ENV_NAME }}
+  GRADLE_PUBLISH_ENV_URL: ${{ secrets.GRADLE_PUBLISH_ENV_URL }}
+
+jobs:
+  gradle-publish:
+    runs-on: ubuntu-latest
+    if: "!github.event.inputs.GRADLE_PUBLISH_DISABLED && !github.event.inputs.DISABLE_ALL_JOBS"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Verify environment variables
+        run: |
+          echo "Verifying environment variables..."
+          if [ -z "${{ env.GRADLE_PUBLISH_ENV_NAME }}" ] || [ -z "${{ env.GRADLE_PUBLISH_ENV_URL }}" ]; then
+            echo "GRADLE_PUBLISH_ENV_NAME or GRADLE_PUBLISH_ENV_URL not set!"
+            exit 1
+          fi
+
+      - name: Publish with Gradle
+        run: |
+          if [ -z "${{ github.event.inputs.GRADLE_PUBLISH_CLOSE_AND_RELEASE }}" ]; then
+            ./gradlew --build-cache publish
+          else
+            set +e
+            ./gradlew --build-cache publishToSonatype closeAndReleaseSonatypeStagingRepository > publish.log 2>&1
+            CODE=$?
+            set -e
+            cat publish.log
+            if [ "$CODE" != 0 ]; then
+              if grep -q "Staging repository is still transitioning after defined time" publish.log; then
+                echo "Staging repository is still transitioning after defined time. Ignoring issue."
+              else
+                exit 1
+              fi
+            fi
+          fi

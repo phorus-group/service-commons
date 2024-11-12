@@ -17,7 +17,7 @@ on:
     types: [opened, edited, synchronize]
 
 jobs:
-  container-test-job:
+  gradle-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
