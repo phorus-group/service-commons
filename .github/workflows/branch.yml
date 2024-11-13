@@ -58,3 +58,16 @@ jobs:
 
       - name: Run Gradle Publish
         run: ./gradlew --build-cache publishToSonatype closeAndReleaseSonatypeStagingRepository
+
+  code-review:
+    name: Code review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+      - name: Code review action
+        id: test-action
+        uses: phorus-group/actions
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
