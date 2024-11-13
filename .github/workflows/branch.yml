@@ -39,6 +39,12 @@ jobs:
   gradle_publish:
     runs-on: ubuntu-latest
     needs: gradle-build
+    env:
+      MY_ENV_VAR: ${{ secrets.MY_SECRET }}
+      OSSRH_USER: ${{ secrets.OSSRH_USER }}
+      PUBLIC_PUBLISH_SIGNING_KEY: ${{ secrets.PUBLIC_PUBLISH_SIGNING_KEY }}
+      PUBLIC_PUBLISH_SIGNING_PASSWORD: ${{ secrets.PUBLIC_PUBLISH_SIGNING_PASSWORD }}
+
     container:
       image: ubuntu:22.04
 
