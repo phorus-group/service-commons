@@ -65,7 +65,7 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v1
       - name: Code review action
         id: test-action
         uses: phorus-group/actions@v1
