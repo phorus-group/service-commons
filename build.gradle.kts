@@ -57,8 +57,9 @@ dependencies {
     testRuntimeOnly("com.h2database:h2")
 }
 
-
-val repoUrl = System.getenv("CI_PROJECT_URL") ?: "not defined"
+val gitProvider = "https://github.com"
+val repository: String? = System.getenv("GITHUB_REPOSITORY")
+val repoUrl = if (repository != null) "$gitProvider/$repository" else "not defined"
 
 tasks {
     getByName<BootJar>("bootJar") {
@@ -113,7 +114,7 @@ tasks {
     }
 
     dokkaHtml.configure {
-        val branch = System.getenv("CI_COMMIT_BRANCH") ?: "not defined"
+        val branch = System.getenv("GITHUB_REF") ?: "not defined"
 
         dokkaSourceSets {
             configureEach {
@@ -177,8 +178,8 @@ publishing {
 
                 scm {
                     url.set(repoUrl)
-                    connection.set("scm:git:${System.getenv("CI_PROJECT_URL")}.git")
-                    developerConnection.set("scm:git:${System.getenv("CI_PROJECT_URL")}.git")
+                    connection.set("scm:git:$repoUrl.git")
+                    developerConnection.set("scm:git:$repoUrl.git")
                 }
             }
         }
