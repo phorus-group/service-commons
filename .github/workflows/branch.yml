@@ -1,55 +1,55 @@
-  name: PR Checks
-  on:
-    workflow_dispatch:
-      inputs:
-        logLevel:
-          description: 'Log level'
-          required: true
-          default: 'warning'
-          type: choice
-          options:
-            - info
-            - warning
-            - debug
-    pull_request:
-      branches:
-        - main
-      types: [opened, edited, synchronize]
+name: PR Checks
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+          - info
+          - warning
+          - debug
+  pull_request:
+    branches:
+      - main
+    types: [opened, edited, synchronize]
 
-  permissions:
-    contents: read
-    actions: write
+permissions:
+  contents: read
+  actions: write
 
-  jobs:
-    gradle-build:
-      runs-on: ubuntu-latest
-      needs: gradle-build
-      steps:
-        - uses: actions/checkout@v4
-        - uses: actions/setup-java@v4
-          with:
-            java-version: '17'
-            distribution: 'temurin'
+jobs:
+  gradle-build:
+    runs-on: ubuntu-latest
+    needs: gradle-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-        - name: Setup Gradle
-          uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
 
-        - name: Build with Gradle
-          run: ./gradlew build
+      - name: Build with Gradle
+        run: ./gradlew build
 
-    gradle_publish:
-      runs-on: ubuntu-latest
-      needs: gradle-build  # Asegura que este job se ejecute después de `gradle-build`
+  gradle_publish:
+    runs-on: ubuntu-latest
+    needs: gradle-build  # Asegura que este job se ejecute después de `gradle-build`
 
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-        - name: Set up Java 17
-          uses: actions/setup-java@v3
-          with:
-            java-version: '17'
-            distribution: 'corretto'
+      - name: Set up Java 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'corretto'
 
-        - name: Run Gradle Publish
-          run: ./gradlew --build-cache publishToSonatype closeAndReleaseSonatypeStagingRepository
+      - name: Run Gradle Publish
+        run: ./gradlew --build-cache publishToSonatype closeAndReleaseSonatypeStagingRepository
