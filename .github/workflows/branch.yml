@@ -65,9 +65,9 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
       - name: Code review action
         id: test-action
-        uses: phorus-group/actions@INDEV-167
+        uses: phorus-group/actions@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
