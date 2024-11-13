@@ -2,7 +2,7 @@ name: Gradle Publish
 
 on:
   workflow_run:
-    workflows: ["PR Checks"]
+    workflows: ["gradle-build"]
     types:
       - completed
 
