@@ -41,6 +41,23 @@ class AddressStepsDefinition(
         requestScenarioScope.request = address
     }
 
+    @Given("the caller has just the given Address:")
+    fun `the caller has just the given Address`(data: DataTable) {
+        val address = data.asMaps().first().let {
+            AddressDTO(
+                address = it["address"],
+            )
+        }
+
+        requestScenarioScope.request = address
+    }
+
+    @Given("the caller has an empty Address for some reason")
+    fun `the caller has an empty Address for some reason`() {
+        val address = AddressDTO()
+        requestScenarioScope.request = address
+    }
+
     @Given("the given Address exists:")
     fun `the given Address exists`(data: DataTable) {
         val userId = (baseScenarioScope.objects["userId"] as String).let { id -> UUID.fromString(id) }
@@ -71,15 +88,23 @@ class AddressStepsDefinition(
         assertEquals(requestScenarioScope.request as AddressDTO, newAddress)
     }
 
-    @Then("the updated Address is found in the database")
-    fun `the updated address is found in the database`() {
+    @Then("the updated Address is found in the database with the values:")
+    fun `the updated Address is found in the database with the values`(data: DataTable) {
+        val expectedAddress = data.asMaps().first().let {
+            AddressDTO(
+                address = it["address"],
+                userId = (baseScenarioScope.objects["userId"] as String).let { id -> UUID.fromString(id) },
+            )
+        }
+
         val oldAddress = baseScenarioScope.objects["addressResponse"] as AddressResponse
 
         val updatedAddress = addressRepository.findById(oldAddress.id!!).getOrNull()?.mapTo<AddressResponse>()
-        assertNotEquals(oldAddress, updatedAddress)
 
-        val expectedAddress = oldAddress.updateFrom(requestScenarioScope.request!!)
-        assertEquals(expectedAddress, updatedAddress)
+        val expectedUpdate = oldAddress.updateFrom(requestScenarioScope.request!!)
+        assertEquals(expectedUpdate, updatedAddress)
+        assertEquals(expectedAddress.address, updatedAddress?.address)
+        assertEquals(expectedAddress.userId, updatedAddress?.userId)
     }
 
     @Then("the Address was removed from the database")
