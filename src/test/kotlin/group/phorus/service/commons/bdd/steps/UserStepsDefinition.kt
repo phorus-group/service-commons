@@ -31,6 +31,7 @@ class UserStepsDefinition(
         val user = data.asMaps().first().let {
             UserDTO(
                 name = it["name"],
+                surname = it["surname"],
             )
         }
 
@@ -42,6 +43,7 @@ class UserStepsDefinition(
         val user = data.asMaps().first().let {
             User(
                 name = it["name"],
+                surname = it["surname"],
             )
         }
 

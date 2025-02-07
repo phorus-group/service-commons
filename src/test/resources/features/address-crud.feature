@@ -3,8 +3,8 @@ Feature: Address CRUD operations
 
   Scenario: Caller wants to create a new Address
     Given the given User exists:
-      | name     |
-      | testUser |
+      | name     | surname  |
+      | testUser | sursur   |
     And the caller has the given Address:
       | address     |
       | testAddress |
@@ -14,8 +14,8 @@ Feature: Address CRUD operations
 
   Scenario: Caller wants to get an already existing Address by ID
     Given the given User exists:
-      | name     |
-      | testUser |
+      | name     | surname  |
+      | testUser | sursur   |
     Given the given Address exists:
       | address     |
       | testAddress |
@@ -25,22 +25,57 @@ Feature: Address CRUD operations
 
   Scenario: Caller wants to update an already existing Address by ID
     Given the given User exists:
-      | name     |
-      | testUser |
+      | name     | surname  |
+      | testUser | sursur   |
     And the given Address exists:
       | address     |
       | testAddress |
+    And the caller has just the given Address:
+      | address       |
+      | otherTestName |
+    When the PUT "/address/{addressId}" endpoint is called
+    Then the service returns HTTP 204
+    And the updated Address is found in the database with the values:
+      | address       |
+      | otherTestName |
+
+  Scenario: Caller wants to update an already existing Address by ID with empty data
+    Given the given User exists:
+      | name     | surname  |
+      | testUser | sursur   |
+    And the given Address exists:
+      | address     |
+      | testAddress |
+    And the caller has an empty Address for some reason
+    When the PUT "/address/{addressId}" endpoint is called
+    Then the service returns HTTP 204
+    And the updated Address is found in the database with the values:
+      | address     |
+      | testAddress |
+
+  Scenario: Caller wants to update an already existing Address by ID with another User ID
+    Given the given User exists:
+      | name     | surname  |
+      | testUser | sursur   |
+    And the given Address exists:
+      | address     |
+      | testAddress |
+    And the given User exists:
+      | name      | surname  |
+      | testUser2 | sursur   |
     And the caller has the given Address:
       | address       |
       | otherTestName |
     When the PUT "/address/{addressId}" endpoint is called
     Then the service returns HTTP 204
-    And the updated Address is found in the database
+    And the updated Address is found in the database with the values:
+      | address       |
+      | otherTestName |
 
   Scenario: Caller wants to delete a Address by ID
     Given the given User exists:
-      | name     |
-      | testUser |
+      | name     | surname  |
+      | testUser | sursur   |
     Given the given Address exists:
       | address     |
       | testAddress |
@@ -50,8 +85,8 @@ Feature: Address CRUD operations
 
   Scenario: Caller wants to get all Address by User ID
     Given the given User exists:
-      | name     |
-      | testUser |
+      | name     | surname  |
+      | testUser | sursur   |
     Given the given Address exists:
       | address     |
       | testAddress |

@@ -194,7 +194,9 @@ open class CrudService<ENTITY: BaseEntity, DTO: Any>(
                 }
             }
 
-            sourceField to (fetchRelation to (targetField to MappingFallback.NULL_OR_THROW))
+            // If the user is calling an update without the id field (so the id field is null), we want to
+            // continue as a fallback to make the final entity keep the current entities
+            sourceField to (fetchRelation to (targetField to MappingFallback.CONTINUE))
         }.toMap()
     }
 }
