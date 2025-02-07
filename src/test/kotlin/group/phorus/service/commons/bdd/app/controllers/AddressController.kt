@@ -21,7 +21,6 @@ class AddressController(
     private val addressService: AddressService,
     private val addressCrudService: CrudService<Address, AddressDTO>,
 ) : CrudController<Address, AddressDTO, AddressResponse>(AddressResponse::class, "/address", addressService) {
-    private val tmp = "pepe"
     @GetMapping("/findAllBy/userId")
     @ResponseStatus(HttpStatus.OK)
     suspend fun findAllByUserId(
