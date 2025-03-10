@@ -6,8 +6,8 @@ import java.net.URL
 import java.time.LocalDate
 
 plugins {
-    id("org.springframework.boot") version "3.2.5"
-    id("io.spring.dependency-management") version "1.1.6"
+    id("org.springframework.boot") version "3.4.3"
+    id("io.spring.dependency-management") version "1.1.7"
     kotlin("plugin.spring") version "1.9.25"
     kotlin("jvm") version "1.9.25"
     id("org.jetbrains.dokka").version("1.9.20")
@@ -21,7 +21,7 @@ plugins {
 
 group = "group.phorus"
 description = "Library containing common logic for Spring based services."
-version = "1.2.1"
+version = "1.2.2"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17

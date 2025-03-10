@@ -133,7 +133,7 @@ open class CrudService<ENTITY: BaseEntity, DTO: Any>(
 
         return withContext(Dispatchers.IO) {
             repository.save(entity)
-        }.id
+        }.id!!
     }
 
     @Suppress("UNCHECKED_CAST")
