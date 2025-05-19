@@ -196,7 +196,12 @@ open class CrudService<ENTITY: BaseEntity, DTO: Any>(
 
             // If the user is calling an update without the id field (so the id field is null), we want to
             // continue as a fallback to make the final entity keep the current entities
-            sourceField to (fetchRelation to (targetField to MappingFallback.CONTINUE))
+            // If the id field is set, then we want to allow throwing in case the entity is not found in the repository
+            val fallback = if (dto::class.memberProperties.find { it.name == sourceField }?.getter?.call(dto) == null) {
+                MappingFallback.CONTINUE
+            } else MappingFallback.NULL_OR_THROW
+
+            sourceField to (fetchRelation to (targetField to fallback))
         }.toMap()
     }
 }
