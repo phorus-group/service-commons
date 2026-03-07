@@ -1,12 +1,11 @@
 package group.phorus.service.commons.bdd.app.controllers
 
 import group.phorus.mapper.mapping.extensions.mapTo
-import group.phorus.service.commons.bdd.app.dtos.AddressDTO
 import group.phorus.service.commons.bdd.app.dtos.AddressResponse
-import group.phorus.service.commons.bdd.app.model.Address
 import group.phorus.service.commons.bdd.app.services.AddressService
-import group.phorus.service.commons.controller.CrudController
-import group.phorus.service.commons.service.CrudService
+import group.phorus.service.commons.controller.SimpleCrudController
+import group.phorus.service.commons.bdd.app.dtos.AddressDTO
+import group.phorus.service.commons.bdd.app.model.Address
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
@@ -19,8 +18,7 @@ import java.util.*
 @RequestMapping("/address")
 class AddressController(
     private val addressService: AddressService,
-    private val addressCrudService: CrudService<Address, AddressDTO>,
-) : CrudController<Address, AddressDTO, AddressResponse>(AddressResponse::class, "/address", addressService) {
+) : SimpleCrudController<Address, AddressDTO, AddressResponse>() {
     @GetMapping("/findAllBy/userId")
     @ResponseStatus(HttpStatus.OK)
     suspend fun findAllByUserId(

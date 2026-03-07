@@ -33,7 +33,7 @@ Feature: Address CRUD operations
     And the caller has just the given Address:
       | address       |
       | otherTestName |
-    When the PUT "/address/{addressId}" endpoint is called
+    When the PATCH "/address/{addressId}" endpoint is called
     Then the service returns HTTP 204
     And the updated Address is found in the database with the values:
       | address       |
@@ -47,7 +47,7 @@ Feature: Address CRUD operations
       | address     |
       | testAddress |
     And the caller has an empty Address for some reason
-    When the PUT "/address/{addressId}" endpoint is called
+    When the PATCH "/address/{addressId}" endpoint is called
     Then the service returns HTTP 204
     And the updated Address is found in the database with the values:
       | address     |
@@ -66,7 +66,7 @@ Feature: Address CRUD operations
     And the caller has the given Address:
       | address       |
       | otherTestName |
-    When the PUT "/address/{addressId}" endpoint is called
+    When the PATCH "/address/{addressId}" endpoint is called
     Then the service returns HTTP 204
     And the updated Address is found in the database with the values:
       | address       |

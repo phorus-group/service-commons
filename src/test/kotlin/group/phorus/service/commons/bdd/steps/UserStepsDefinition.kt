@@ -28,10 +28,10 @@ class UserStepsDefinition(
 ) {
     @Given("the caller has the given User:")
     fun `the caller has the given User`(data: DataTable) {
-        val user = data.asMaps().first().let {
+        val user = data.asMaps().first().let { map ->
             UserDTO(
-                name = it["name"],
-                surname = it["surname"],
+                name = map["name"]?.takeIf { value -> value.isNotBlank() },
+                surname = map["surname"]?.takeIf { value -> value.isNotBlank() },
             )
         }
 
@@ -76,6 +76,19 @@ class UserStepsDefinition(
         assertEquals(expectedUser, updatedUser)
     }
 
+    @Then("the replaced User is found in the database")
+    fun `the replaced user is found in the database`() {
+        val oldUser = baseScenarioScope.objects["userResponse"] as UserResponse
+        val requestDto = requestScenarioScope.request as UserDTO
+
+        val replacedUser = userRepository.findById(oldUser.id!!).getOrNull()?.mapTo<UserResponse>()
+        assertNotEquals(oldUser, replacedUser)
+
+        // Verify full replacement with all fields provided
+        assertEquals(requestDto.name, replacedUser?.name)
+        assertEquals(requestDto.surname, replacedUser?.surname)
+    }
+
     @Then("the User was removed from the database")
     fun `the User was removed from the database`() {
         val userId = (baseScenarioScope.objects["userId"] as String).let { UUID.fromString(it) }
@@ -91,6 +104,18 @@ class UserStepsDefinition(
             .expectBody<UserResponse>().returnResult().responseBody!!
 
         assertEquals(baseScenarioScope.objects["userResponse"] as UserResponse, userResponse)
+    }
+
+    @Given("a random non-existent ID is generated")
+    fun `a random non-existent ID is generated`() {
+        baseScenarioScope.objects["randomId"] = UUID.randomUUID().toString()
+    }
+
+    @Then("the User still has all original values")
+    fun `the User still has all original values`() {
+        val originalUser = baseScenarioScope.objects["userResponse"] as UserResponse
+        val currentUser = userRepository.findById(originalUser.id!!).getOrNull()?.mapTo<UserResponse>()
+        assertEquals(originalUser, currentUser)
     }
 
     @Then("the service returns a message with the validation errors")

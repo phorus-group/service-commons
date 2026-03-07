@@ -1,3 +1,2 @@
 group.phorus.service.commons.config.WebFluxConfig
-group.phorus.service.commons.service.ApplicationContextProvider
 group.phorus.service.commons.service.CrudServiceDependencyResolver

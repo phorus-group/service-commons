@@ -21,7 +21,7 @@ ext["jackson-bom.version"] = "3.1.0"
 
 group = "group.phorus"
 description = "Library containing common logic for Spring based services."
-version = "1.2.4"
+version = "2.0.0"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -31,7 +31,6 @@ java {
 
 repositories {
     mavenCentral()
-    mavenLocal()
 }
 
 dependencies {
@@ -48,8 +47,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 
     // Phorus
-    implementation("group.phorus:mapper:1.2.0")
-    implementation("group.phorus:exception-handling:1.1.1")
+    api("group.phorus:mapper:1.2.0")
+    api("group.phorus:exception-handling:1.1.3")
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")

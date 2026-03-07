@@ -5,23 +5,12 @@ import group.phorus.service.commons.dtos.validationGroups.Replace
 import jakarta.validation.constraints.NotBlank
 import java.util.*
 
-data class UserDTO (
+data class ProductDTO(
     @field:NotBlank(groups = [Create::class, Replace::class], message = "Cannot be blank")
     var name: String? = null,
-
-    @field:NotBlank(groups = [Create::class, Replace::class], message = "Cannot be blank")
-    var surname: String? = null,
 )
 
-data class UserResponse(
+data class ProductResponse(
     var id: UUID? = null,
     var name: String? = null,
-    var surname: String? = null,
-)
-
-data class UserDetailResponse(
-    var id: UUID? = null,
-    var name: String? = null,
-    var surname: String? = null,
-    var addresses: List<AddressResponse>? = null,
 )
