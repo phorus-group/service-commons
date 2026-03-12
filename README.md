@@ -45,6 +45,7 @@ REST operations. Designed to reduce boilerplate in service layer implementations
   - [Why CrudService return DTOs, not entities](#why-crudservice-return-dtos-not-entities)
   - [Transactional mapping extensions](#transactional-mapping-extensions)
   - [Blocking I/O and Dispatchers.IO](#blocking-io-and-dispatchersio)
+  - [Entities and coroutine context switches](#entities-and-coroutine-context-switches)
 - [Optimizing queries to avoid N+1 selects](#optimizing-queries-to-avoid-n1-selects)
 - [Default configuration](#default-configuration)
   - [PostProcessorConfig](#postprocessorconfig)
@@ -952,6 +953,47 @@ suspend fun findById(id: UUID): ProductResponse =
 
 `CrudService` methods use `withContext(Dispatchers.IO)` internally. Custom service methods that
 access repositories or lazy properties must do the same.
+
+### Entities and coroutine context switches
+
+Even with `withContext(Dispatchers.IO)` in place, passing a JPA entity out of that block and
+accessing its lazy properties afterward will still throw `LazyInitializationException`. When
+`withContext` returns, the Hibernate session that was open on that thread is gone. The object
+remains in memory, but any lazy collection it holds can no longer be initialized.
+
+```kotlin
+// BAD: entity loaded inside withContext, lazy property accessed after the block returns
+suspend fun submitOrder(id: UUID) {
+    val order = withContext(Dispatchers.IO) {
+        orderRepository.findById(id).orElseThrow { NotFound("...") }
+    } // session is closed here, entity is now detached
+
+    withContext(Dispatchers.IO) {
+        // LazyInitializationException: no session on this thread
+        order.items.forEach { processItem(it) }
+    }
+}
+```
+
+The same happens when an entity is passed to another function that accesses lazy fields after
+the original transaction has already closed:
+
+```kotlin
+// BAD: entity passed out before its lazy fields are accessed
+val order = withContext(Dispatchers.IO) {
+    transactionTemplate.execute {
+        orderRepository.findById(id).orElseThrow { NotFound("...") }
+    }
+} // detached here
+
+notifySuppliers(order) // accessing order.items inside this call will fail
+```
+
+This is why it is recommended to avoid passing entities across transaction or thread boundaries
+altogether. Instead, convert to a response DTO inside the same transaction using `fetchAndMapTo`
+or `transactionalMapTo`, keep the session open for the whole operation using `withReadTransaction`,
+or pass only IDs and re-fetch at the point of use. Response DTOs hold only plain data and are
+safe to pass across any boundary.
 
 ## Optimizing queries to avoid N+1 selects
 
