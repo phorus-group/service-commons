@@ -1,6 +1,9 @@
 package group.phorus.service.commons.service
 
+import group.phorus.mapper.FunctionMappings
+import group.phorus.mapper.Mappings
 import group.phorus.mapper.OriginalEntity
+import group.phorus.mapper.TargetField
 import group.phorus.mapper.mapping.mapTo
 import org.springframework.transaction.support.TransactionTemplate
 import kotlin.reflect.KType
@@ -39,13 +42,29 @@ import kotlin.reflect.typeOf
  * Always wrap in `withContext(Dispatchers.IO)` because repository calls and lazy-loading perform
  * blocking I/O, which must not run on the WebFlux event loop.
  *
+ * If you prefer to use the original Phorus Mapper [mapTo] directly, you can wrap the call yourself
+ * inside a [TransactionTemplate] to achieve the same effect.
+ *
  * @param T the target response DTO type (must be known at compile time).
  * @param transactionTemplate the Spring [TransactionTemplate] bean for managing transactions.
+ * @param exclusions a list of target fields to exclude from mapping.
+ * @param mappings a map of fields to map forcefully, with the format: [OriginalField] - [TargetField] - [MappingFallback].
+ * @param functionMappings a map of fields to map forcefully with a mutating function, with the format:
+ * [OriginalField] - [MappingFunction] - [TargetField] - [MappingFallback].
+ * @param ignoreMapFromAnnotations whether to ignore `@MapFrom` annotations on the target DTO. Default: false.
+ * @param useSettersOnly whether to use only setters instead of constructors when building the target. Default: false.
+ * @param mapPrimitives whether to map between primitive types (e.g. [String] ↔ [Number]). Default: true.
  * @return the mapped response DTO, or `null` if the entity or Mapper result is `null`.
  */
 @Suppress("UNCHECKED_CAST")
 inline fun <reified T : Any> Any.transactionalMapTo(
     transactionTemplate: TransactionTemplate,
+    exclusions: List<TargetField> = emptyList(),
+    mappings: Mappings = emptyMap(),
+    functionMappings: FunctionMappings = emptyMap(),
+    ignoreMapFromAnnotations: Boolean = false,
+    useSettersOnly: Boolean = false,
+    mapPrimitives: Boolean = true,
 ): T? {
     val entity = this
     val readOnly = TransactionTemplate(transactionTemplate.transactionManager!!).apply {
@@ -55,6 +74,12 @@ inline fun <reified T : Any> Any.transactionalMapTo(
         mapTo(
             originalEntity = OriginalEntity(entity, entity::class.starProjectedType),
             targetType = typeOf<T>(),
+            exclusions = exclusions,
+            mappings = mappings,
+            functionMappings = functionMappings,
+            ignoreMapFromAnnotations = ignoreMapFromAnnotations,
+            useSettersOnly = useSettersOnly,
+            mapPrimitives = mapPrimitives,
         ) as T?
     }
 }
@@ -78,15 +103,31 @@ inline fun <reified T : Any> Any.transactionalMapTo(
  * Always wrap in `withContext(Dispatchers.IO)` because repository calls and lazy-loading perform
  * blocking I/O, which must not run on the WebFlux event loop.
  *
+ * If you prefer to use the original Phorus Mapper [mapTo] directly, you can wrap the call yourself
+ * inside a [TransactionTemplate] to achieve the same effect.
+ *
  * @param T the target response type.
  * @param targetType the [KType] representing the target response type, obtained via reflection.
  * @param transactionTemplate the Spring [TransactionTemplate] bean for managing transactions.
+ * @param exclusions a list of target fields to exclude from mapping.
+ * @param mappings a map of fields to map forcefully, with the format: [OriginalField] - [TargetField] - [MappingFallback].
+ * @param functionMappings a map of fields to map forcefully with a mutating function, with the format:
+ * [OriginalField] - [MappingFunction] - [TargetField] - [MappingFallback].
+ * @param ignoreMapFromAnnotations whether to ignore `@MapFrom` annotations on the target DTO. Default: false.
+ * @param useSettersOnly whether to use only setters instead of constructors when building the target. Default: false.
+ * @param mapPrimitives whether to map between primitive types (e.g. [String] ↔ [Number]). Default: true.
  * @return the mapped response DTO, or `null` if the entity or Mapper result is `null`.
  */
 @Suppress("UNCHECKED_CAST")
 fun <T : Any> Any.transactionalMapTo(
     targetType: KType,
     transactionTemplate: TransactionTemplate,
+    exclusions: List<TargetField> = emptyList(),
+    mappings: Mappings = emptyMap(),
+    functionMappings: FunctionMappings = emptyMap(),
+    ignoreMapFromAnnotations: Boolean = false,
+    useSettersOnly: Boolean = false,
+    mapPrimitives: Boolean = true,
 ): T? {
     val entity = this
     val readOnly = TransactionTemplate(transactionTemplate.transactionManager!!).apply {
@@ -96,6 +137,12 @@ fun <T : Any> Any.transactionalMapTo(
         mapTo(
             originalEntity = OriginalEntity(entity, entity::class.starProjectedType),
             targetType = targetType,
+            exclusions = exclusions,
+            mappings = mappings,
+            functionMappings = functionMappings,
+            ignoreMapFromAnnotations = ignoreMapFromAnnotations,
+            useSettersOnly = useSettersOnly,
+            mapPrimitives = mapPrimitives,
         ) as T?
     }
 }
@@ -131,13 +178,29 @@ fun <T : Any> Any.transactionalMapTo(
  * }
  * ```
  *
+ * If you prefer to use the original Phorus Mapper [mapTo] directly, you can wrap both the load and the
+ * mapping call yourself inside a [TransactionTemplate] to achieve the same effect.
+ *
  * @param T the target response DTO type (must be known at compile time).
  * @param loader a lambda that loads and returns the entity from a repository. This lambda executes inside
  *               the transaction, so the entity remains attached.
+ * @param exclusions a list of target fields to exclude from mapping.
+ * @param mappings a map of fields to map forcefully, with the format: [OriginalField] - [TargetField] - [MappingFallback].
+ * @param functionMappings a map of fields to map forcefully with a mutating function, with the format:
+ * [OriginalField] - [MappingFunction] - [TargetField] - [MappingFallback].
+ * @param ignoreMapFromAnnotations whether to ignore `@MapFrom` annotations on the target DTO. Default: false.
+ * @param useSettersOnly whether to use only setters instead of constructors when building the target. Default: false.
+ * @param mapPrimitives whether to map between primitive types (e.g. [String] ↔ [Number]). Default: true.
  * @return the mapped response DTO, or `null` if the loader returns `null` or Mapper returns `null`.
  */
 @Suppress("UNCHECKED_CAST")
 inline fun <reified T : Any> TransactionTemplate.fetchAndMapTo(
+    exclusions: List<TargetField> = emptyList(),
+    mappings: Mappings = emptyMap(),
+    functionMappings: FunctionMappings = emptyMap(),
+    ignoreMapFromAnnotations: Boolean = false,
+    useSettersOnly: Boolean = false,
+    mapPrimitives: Boolean = true,
     crossinline loader: () -> Any,
 ): T? {
     val readOnly = TransactionTemplate(this.transactionManager!!).apply {
@@ -148,6 +211,12 @@ inline fun <reified T : Any> TransactionTemplate.fetchAndMapTo(
         mapTo(
             originalEntity = OriginalEntity(entity, entity::class.starProjectedType),
             targetType = typeOf<T>(),
+            exclusions = exclusions,
+            mappings = mappings,
+            functionMappings = functionMappings,
+            ignoreMapFromAnnotations = ignoreMapFromAnnotations,
+            useSettersOnly = useSettersOnly,
+            mapPrimitives = mapPrimitives,
         ) as T?
     }
 }

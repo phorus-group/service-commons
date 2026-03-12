@@ -862,8 +862,25 @@ suspend fun findDetail(@PathVariable id: UUID): ProductDetailResponse =
     productService.findDetailById(id)
 ```
 
+All optional parameters from [Phorus Mapper's](https://github.com/phorus-group/mapper) `mapTo` are supported:
+
+```kotlin
+transactionTemplate.fetchAndMapTo<ProductDetailResponse>(
+    exclusions = listOf("internalField"),
+    mappings = mapOf("sourceField" to ("targetField" to MappingFallback.NULL)),
+    ignoreMapFromAnnotations = false,
+    useSettersOnly = false,
+    mapPrimitives = true,
+) {
+    productRepository.findById(id).orElseThrow { NotFound("...") }
+}!!
+```
+
 When called inside an existing transaction, it joins it (no extra connection). When called
 outside a transaction, it creates a new read-only transaction.
+
+If you prefer to use Phorus Mapper's `mapTo` directly, you can wrap both the load and
+the mapping call yourself inside a `TransactionTemplate` to achieve the same effect.
 
 #### `transactionalMapTo` (reified)
 
@@ -883,8 +900,24 @@ class ProductServiceImpl(
 }
 ```
 
+All optional parameters from [Phorus Mapper's](https://github.com/phorus-group/mapper) `mapTo` are supported:
+
+```kotlin
+product.transactionalMapTo<ProductResponse>(
+    transactionTemplate = transactionTemplate,
+    exclusions = listOf("internalField"),
+    mappings = mapOf("sourceField" to ("targetField" to MappingFallback.NULL)),
+    ignoreMapFromAnnotations = false,
+    useSettersOnly = false,
+    mapPrimitives = true,
+)!!
+```
+
 When called inside an existing transaction, it joins it (no extra connection). When called
 outside a transaction, it creates a new read-only transaction for the mapping operation.
+
+If you prefer, you can use Phorus Mapper's `mapTo` directly and wrap it inside a
+`TransactionTemplate` yourself to achieve the same effect.
 
 #### `transactionalMapTo` (KType)
 
