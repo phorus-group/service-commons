@@ -39,6 +39,7 @@ REST operations. Designed to reduce boilerplate in service layer implementations
   - [How @MapTo works with Mapper](#how-mapto-works-with-mapper)
   - [Understanding @MapFrom path navigation](#understanding-mapfrom-path-navigation)
   - [Multiple relationships](#multiple-relationships)
+  - [Using ID-only references (no JPA relationships)](#using-id-only-references-no-jpa-relationships)
 - [Transaction management and lazy loading](#transaction-management-and-lazy-loading)
   - [How CrudService solves this](#how-crudservice-solves-this)
   - [Transaction helpers for custom logic](#transaction-helpers-for-custom-logic)
@@ -716,6 +717,83 @@ data class ProductResponse(
     var name: String? = null,
 )
 ```
+
+### Using ID-only references (no JPA relationships)
+
+The examples above use JPA relationship annotations (`@ManyToOne`, `@OneToMany`) to model
+connections between entities, with `@MapTo` and `@MapFrom` bridging the gap between flat DTOs
+and those object references. However, service-commons does not require JPA relationships to
+function. The library works just as well when entities store plain UUID foreign keys instead of
+full object references.
+
+In an ID-only approach, instead of declaring `@ManyToOne var author: Author? = null` on the
+entity, you declare `@Column var authorId: UUID? = null`. Since the entity, DTO, and response
+all share the same flat UUID type for the field, Mapper maps it by name automatically and neither
+`@MapTo` nor `@MapFrom` is needed:
+
+```kotlin
+@Entity
+class Book(
+    @Column(nullable = false)
+    var authorId: UUID? = null,
+
+    @Column(nullable = false)
+    var title: String? = null,
+) : BaseEntity()
+
+data class BookDTO(
+    @field:NotNull(groups = [Create::class], message = "Cannot be null")
+    var authorId: UUID? = null,
+
+    @field:NotBlank(groups = [Create::class], message = "Cannot be blank")
+    var title: String? = null,
+)
+
+data class BookResponse(
+    var id: UUID? = null,
+    var authorId: UUID? = null,
+    var title: String? = null,
+)
+```
+
+CrudService, CrudController, validation groups, and all other library features continue to work
+the same way. No configuration changes are needed.
+
+When you need data from a related entity, you call the corresponding service (which returns a
+response DTO, following the convention of not passing entities between services) or write a
+repository query with an explicit join. This is more manual than navigating a JPA relationship,
+but it makes data access explicit and keeps entities simple.
+
+<details>
+<summary><b>Tradeoffs between JPA relationships and ID-only references</b></summary>
+
+**JPA relationships** (`@ManyToOne`, `@OneToMany`, etc.) provide lazy loading so related data is
+fetched only when accessed, cascading operations so that deleting a parent can automatically
+delete its children, JPQL navigation like
+`SELECT b FROM Book b WHERE b.author.name = :name`, and referential integrity checks at the
+ORM level.
+
+**ID-only references** (`@Column var authorId: UUID`) produce simpler entities with no proxy
+objects or lazy initialization concerns, no bidirectional relationship complexity, no risk of
+N+1 selects from accidental lazy loading during serialization, and entities that behave as
+plain data objects. `@MapTo` and `@MapFrom` become unnecessary for those fields since the
+entity, DTO, and response already share the same type. You would still use `@MapFrom` for
+other cases where field extraction is needed (for example, a computed or nested
+non-relationship field), but for foreign keys it adds no value when the entity stores the
+ID directly. One catch is that a plain `@Column` UUID is just a regular column from JPA's
+perspective, not a foreign key. Hibernate's auto-generated schema (`ddl-auto`) won't create
+foreign key constraints for those fields, which means local test setups using Testcontainers
+or H2 with auto-generated schemas will lack referential integrity enforcement on those
+columns.
+
+Both approaches are fully compatible with service-commons, and you can mix them in the same
+project. JPA relationships work well for entities that are always loaded together (e.g., a
+`User` with an `@OneToMany` collection of `Address` entities owned by the same service), while
+ID-only references are a better fit when the related entity lives behind a different service
+boundary or when you want to avoid the complexity that comes with Hibernate proxies, detached
+entities, and session lifecycle management.
+
+</details>
 
 ## Transaction management and lazy loading
 
