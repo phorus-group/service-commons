@@ -1,5 +1,11 @@
 # Service Commons
 
+> **RENAMED**: This library has been renamed to:
+>
+> - [`service-spring-boot-starter`](https://github.com/phorus-group/service-spring-boot-starter)
+>
+> This library will not receive further updates. Please migrate to the replacement above.
+
 [![GitHub license](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Maven Central](https://img.shields.io/maven-central/v/group.phorus/service-commons)](https://mvnrepository.com/artifact/group.phorus/service-commons)
 
